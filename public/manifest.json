@@ -1,0 +1,34 @@
+{
+  "name": "",
+  "short_name": "The Cryptosentry Safe",
+  "description": "The Cryptosentry Safe App",
+  "start_url": "/",
+  "display": "standalone",
+  "scope": "/",
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#0A0302",
+  "status_bar": "default",
+  "icons": [
+    {
+      "src": "/images/dark-logo.png",
+      "sizes": "160x160"
+    }
+  ],
+  "dir": "ltr",
+  "lang": "en-US",
+  "screenshots": [
+    {
+      "src": "/images/dark-logo.png",
+      "sizes": "750x1334",
+      "type": "image/png"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Login",
+      "url": "/login/",
+      "description": "The Cryptosentry Safe Shortcut"
+    }
+  ]
+}
