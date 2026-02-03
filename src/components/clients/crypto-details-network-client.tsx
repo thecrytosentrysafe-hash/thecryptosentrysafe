@@ -144,8 +144,8 @@ function CryptoDetailsNetworkClient({ coin, transactions, coinDetails }: CryptoD
 
         {/* Transaction List */}
         <div className="space-y-4">
-          {JSON.parse(notifications).length > 0 ? (
-            (JSON.parse(notifications) as NotificationType[]).map((notification) => (
+          {JSON.parse(transactions).length > 0 ? (
+            (JSON.parse(transactions) as NotificationType[]).map((notification) => (
               <div
                 key={notification._id}
                 className="bg-white rounded-lg p-4 shadow-md border border-gray-200 transition-all duration-200"
