@@ -1,50 +1,40 @@
+import { CRYPTO_ASSETS } from '@/constants';
 import { getCoinRelatedTransactions } from '@/actions/notification.action';
 import CryptoDetailsNetworkClient from '@/components/clients/crypto-details-network-client'
-import { CRYPTO_ASSETS } from '@/constants';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { redirect, notFound } from 'next/navigation';
 
-const getCoinDetails = async (coinId: string) => {
+export async function getCoinData(coinId: string) {
   try {
-    const coin = CRYPTO_ASSETS.find((asset) => asset.id === coinId);
+    const asset = CRYPTO_ASSETS.filter(asset => asset.id === coinId)[0];
 
-    if (!coin) throw new Error("Coin does not exist")
-    const response = await fetch(
-      `https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd&include_market_cap=true&include_24hr_vol=true&include_24hr_change=true`,
-    )
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch crypto data")
+    if (!asset) {
+      throw new Error("Coin does not exist");
     }
-    
-    const data = await response.json()
+  
+    const res = await fetch(
+      `https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd&include_market_cap=true&include_24hr_vol=true&include_24hr_change=true`,
+    );
 
-    return console.log(data)
+    if (!res.ok) throw new Error("Failed to fetch coin");
 
-    const coinData = CRYPTO_ASSETS.map((coin) => {
-      return {
-        symbol: coin.symbol,
-        name: coin.name,
-        id: coin.id,
-        balance: coin.balance,
-        icon_image: coin.icon_image,
-        network_image: coin.network_image,
-        network: coin.network,
-        price: Number(data[coin.id]?.usd || 0),
-        change24h: Number(data[coin.id]?.usd_24h_change || 0),
-        volume_24h: Number(data[coin.id]?.usd_24h_vol || 0),
-        market_cap: Number(data[coin.id]?.usd_market_cap || 0),
-      }
-    })
+    const data = await res.json();
 
-    return coinData;
-  } catch (err) {
-    console.error("Error fetching crypto data:", err)
-    return []
-  }
+        console.log(data);
+
+    return {
+        price: Number(data[coinId]?.usd || 0),
+        change24h: Number(data[coinId]?.usd_24h_change || 0),
+        volume_24h: Number(data[coinId]?.usd_24h_vol || 0),
+        market_cap: Number(data[coinId]?.usd_market_cap || 0),
+      };
+    } catch (err) {
+      console.log("Error getting coin: ", err)
+      return {}
+    }
 }
-
+    
 type Params = {
   params: Promise<{ coin: string, network: string }>
 }
@@ -52,9 +42,18 @@ type Params = {
 async function CryptoDetailsNetwork({ params }: Params) {
   const { coin, network } = (await params);
 
-  const session = await auth.api.getSession({
-    headers: await headers()
-  });
+  const asset = CRYPTO_ASSETS.filter(asset => asset.symbol === coin.toUpperCase())[0];
+
+  if (!asset) {
+    throw notFound();
+  }
+
+  const [session, assetData] = await Promise.all([
+    auth.api.getSession({
+      headers: await headers()
+    }),
+    getCoinData(asset.id)
+  ])
 
   if (!session) {
     throw redirect("/login")
@@ -62,11 +61,24 @@ async function CryptoDetailsNetwork({ params }: Params) {
 
   const transactions = await getCoinRelatedTransactions(session.user.id, coin.toLocaleUpperCase());
 
+  const coinProp = (
+    network === "native" ? coin.toUpperCase() : `${coin.toUpperCase()}_${network.toUpperCase()}`
+  ) as keyof UserCoin
+  const coinPrice = assetData ? { usd: assetData.price } : { usd: 0 };
+
   return (
     <CryptoDetailsNetworkClient
       coin={coin}
-      network={network}
       transactions={JSON.stringify(transactions)}
+      coinDetails={{
+        coinBalance: (JSON.parse(session.user.coins) as UserCoin)[coinProp].balance,
+        coinPrice: coinPrice.usd || 0,
+        coinName: asset.name,
+        src: asset.icon_image,
+        alt: asset.name,
+        networkSrc: asset.network_image,
+        network: asset.network
+      }}
     />
   )
 }

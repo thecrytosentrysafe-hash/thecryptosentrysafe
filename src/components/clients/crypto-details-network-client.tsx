@@ -1,30 +1,41 @@
 "use client";
 
-import { ChevronLeft, TrendingUp, ArrowUp, ArrowDown, ArrowLeftRight, Zap, CreditCard } from 'lucide-react'
+import { ChevronLeft, TrendingUp, CreditCard, ArrowUp, ArrowDown, ArrowLeftRight, ExternalLink, Zap } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { SendModal } from '../modals/send-modal';
-import { ReceiveModal } from '../modals/receive-modal';
 import { formatDate } from '@/lib/utils';
-import Link from 'next/link';
+import CryptoImage from '../crypto-image';
+import Link from "next/link";
+import { cn } from '@/lib/utils';
+import { useModal } from '@/hooks/use-modal';
 
 interface CryptoDetailsNetworkClientProps {
   coin: string
-  network: string,
   transactions: string
+  coinDetails: {
+    coinBalance: number
+    coinPrice: number
+    coinName: string
+    src: string;
+    alt: string;
+    networkSrc: string | null;
+    network: string | null;
+  }
 }
 
-function CryptoDetailsNetworkClient({ coin, network, transactions }: CryptoDetailsNetworkClientProps) {
+function CryptoDetailsNetworkClient({ coin, transactions, coinDetails }: CryptoDetailsNetworkClientProps) {
   const router = useRouter();
 
+  const { openSendModal, openReceiveModal } = useModal();
 
-  const [showSendModal, setShowSendModal] = useState(false)
-  const [showReceiveModal, setShowReceiveModal] = useState(false)
+  const coinName = coinDetails.coinName
+  const coinSymbol = coin.toUpperCase()
+  const balance = coinDetails.coinBalance || 0;
+  const usdValue = balance * coinDetails.coinPrice;
 
-  const coinName = assetConfig?.name || coin.toUpperCase()
-  const coinSymbol = assetConfig?.symbol || coin.toUpperCase()
-  const balance = "260.44740000"
-  const usdValue = "$24,900,680.52"
+  const getHref = (rootPath: string) => {
+    return `${rootPath}/${coin.toLowerCase() === "usdt" ? `${coin.toLowerCase()}/trc20` : `${coin.toLowerCase()}/native`}`
+  }
 
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white pb-24">
@@ -51,9 +62,12 @@ function CryptoDetailsNetworkClient({ coin, network, transactions }: CryptoDetai
       <div className="px-4">
         {/* Coin Icon */}
         <div className="flex justify-center my-8">
-          <div className="w-24 h-24 rounded-full bg-linear-to-br from-yellow-400 to-yellow-600 flex items-center justify-center text-4xl font-bold text-white shadow-lg">
-            ₿
-          </div>
+          <CryptoImage
+            src={coinDetails.src}
+            alt={coinDetails.alt}
+            networkSrc={coinDetails.networkSrc}
+            network={coinDetails.network}
+          />
         </div>
 
         {/* Balance */}
@@ -66,7 +80,7 @@ function CryptoDetailsNetworkClient({ coin, network, transactions }: CryptoDetai
         <div className="my-8 grid grid-cols-4 gap-4">
           <div className="flex flex-col items-center">
             <button
-              onClick={() => setShowSendModal(true)}
+              onClick={openSendModal}
               className="h-16 w-16 rounded-full bg-gray-200 dark:bg-[#374151] hover:bg-gray-300 dark:hover:bg-[#2e3847] flex items-center justify-center"
             >
               <ArrowUp className="text-xl w-5 h-5" />
@@ -75,7 +89,7 @@ function CryptoDetailsNetworkClient({ coin, network, transactions }: CryptoDetai
           </div>
           <div className="flex flex-col items-center">
             <button
-              onClick={() => setShowReceiveModal(true)}
+              onClick={openReceiveModal}
               className="h-16 w-16 rounded-full bg-gray-200 dark:bg-[#374151] hover:bg-gray-300 dark:hover:bg-[#2e3847] flex items-center justify-center"
             >
               <ArrowDown className="text-xl w-5 h-5" />
@@ -84,7 +98,7 @@ function CryptoDetailsNetworkClient({ coin, network, transactions }: CryptoDetai
           </div>
           <div className="flex flex-col items-center">
             <Link
-              href="/buy"
+              href={getHref("/buy/details")}
               className="h-16 w-16 rounded-full bg-blue-700 hover:bg-blue-600 flex items-center justify-center"
             >
               <Zap color="white" className="text-xl w-5 h-5" />
@@ -168,15 +182,6 @@ function CryptoDetailsNetworkClient({ coin, network, transactions }: CryptoDetai
           }
         </div>
       </div>
-
-      <SendModal
-        isOpen={showSendModal}
-        onClose={() => setShowSendModal(false)}
-      />
-      <ReceiveModal
-        isOpen={showReceiveModal}
-        onClose={() => setShowReceiveModal(false)}
-      />
     </main>
   )
 }
