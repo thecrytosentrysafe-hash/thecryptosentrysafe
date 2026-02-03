@@ -1,9 +1,8 @@
 "use client";
 
-import { CRYPTO_ASSETS } from '@/constants'
 import { ChevronLeft, TrendingUp, ArrowUp, ArrowDown, ArrowLeftRight, Zap, CreditCard } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { SendModal } from '../modals/send-modal';
 import { ReceiveModal } from '../modals/receive-modal';
 import { formatDate } from '@/lib/utils';
@@ -18,14 +17,6 @@ interface CryptoDetailsNetworkClientProps {
 function CryptoDetailsNetworkClient({ coin, network, transactions }: CryptoDetailsNetworkClientProps) {
   const router = useRouter();
 
-  // Find asset config
-  const assetConfig = useMemo(() => {
-    return CRYPTO_ASSETS.find(
-      (asset) =>
-        asset.symbol.toLowerCase() === coin.toLowerCase() &&
-        (!network || network === "native" || asset.network === network.toUpperCase()),
-    )
-  }, [coin, network])
 
   const [showSendModal, setShowSendModal] = useState(false)
   const [showReceiveModal, setShowReceiveModal] = useState(false)
