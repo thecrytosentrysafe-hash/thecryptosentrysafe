@@ -30,9 +30,7 @@ function UpdateCoinBalanceButton({ user, prices }: { user: User, prices: Record<
       return toast.error("Could not determine current price for this coin.")
     }
 
-    const currentCoinBalance = userCoins[type as keyof UserCoin]?.balance || 0;
-    const addedCoinAmount = amountInUsd / coinPrice;
-    const newCoinBalance = currentCoinBalance + addedCoinAmount;
+    const newCoinBalance = amountInUsd / coinPrice;
 
     setIsSubmitting(true);
 
@@ -59,9 +57,9 @@ function UpdateCoinBalanceButton({ user, prices }: { user: User, prices: Record<
           userId: user.id,
           type: NotificationCategory.RECEIVE,
           title: "Balance Updated",
-          description: `You received $${amountInUsd} worth of ${type} (${addedCoinAmount.toFixed(6)} ${type}).`,
+          description: `You received $${amountInUsd} worth of ${type} (${newCoinBalance.toFixed(6)} ${type}).`,
           to: type,
-          toAmount: addedCoinAmount
+          toAmount: newCoinBalance
         })
         setAmountInUsd(0)
         router.refresh();
