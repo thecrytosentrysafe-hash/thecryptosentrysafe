@@ -1,12 +1,10 @@
 "use client";
 
-import { ChevronLeft, TrendingUp, CreditCard, ArrowUp, ArrowDown, ArrowLeftRight, ExternalLink, Zap } from 'lucide-react'
+import { ChevronLeft, TrendingUp, CreditCard, ArrowUp, ArrowDown, ArrowLeftRight, Zap, ArrowDownLeft, ArrowUpRight, ShoppingBag, ClipboardCheck, Bell } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
-import { formatDate } from '@/lib/utils';
 import CryptoImage from '../crypto-image';
 import Link from "next/link";
-import { cn } from '@/lib/utils';
+import { cn, formatDate } from '@/lib/utils';
 import { useModal } from '@/hooks/use-modal';
 
 interface CryptoDetailsNetworkClientProps {
@@ -32,6 +30,27 @@ function CryptoDetailsNetworkClient({ coin, transactions, coinDetails }: CryptoD
   const coinSymbol = coin.toUpperCase()
   const balance = coinDetails.coinBalance || 0;
   const usdValue = balance * coinDetails.coinPrice;
+
+  const getIcon = (type: string) => {
+    switch (type) {
+      case "swap":
+        return <ArrowLeftRight className="w-5 h-5 text-blue-500" />
+      case "deposit":
+        return <ArrowDownLeft className="w-5 h-5 text-green-500" />
+      case "withdraw":
+        return <ArrowUpRight className="w-5 h-5 text-red-500" />
+      case "buy":
+        return <ShoppingBag className="w-5 h-5 text-yellow-500" />
+      case "recieve":
+        return <ArrowDownLeft className="w-5 h-5 text-green-500" />
+      case "kyc_update":
+        return <ClipboardCheck className="w-5 h-5 text-orange-500" />
+      case "wallet_connect":
+        return <Bell className="w-5 h-5 text-indigo-500" />
+      default:
+        return <Bell className="w-5 h-5 text-gray-500" />
+    }
+  }
 
   const getHref = (rootPath: string) => {
     return `${rootPath}/${coin.toLowerCase() === "usdt" ? `${coin.toLowerCase()}/trc20` : `${coin.toLowerCase()}/native`}`
@@ -72,8 +91,8 @@ function CryptoDetailsNetworkClient({ coin, transactions, coinDetails }: CryptoD
 
         {/* Balance */}
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold mb-2">{balance} BTC</h2>
-          <p className="text-gray-500 dark:text-gray-400">{usdValue}</p>
+          <h2 className="text-3xl md:text-4xl font-bold mb-2">{balance} {coinSymbol}</h2>
+          <p className="text-gray-500 dark:text-gray-400">${usdValue}</p>
         </div>
 
         {/* Action Buttons */}
@@ -125,60 +144,70 @@ function CryptoDetailsNetworkClient({ coin, transactions, coinDetails }: CryptoD
 
         {/* Transaction List */}
         <div className="space-y-4">
-          {(JSON.parse(transactions) as NotificationType[]).length > 0
-            ? (JSON.parse(transactions) as NotificationType[]).map((tx) => {
-              const isPositive = tx.from === coin.toUpperCase();
-
-              return (
-                <div
-                  key={tx._id}
-                  className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                >
-                  <div className="flex items-center gap-4">
+          {JSON.parse(notifications).length > 0 ? (
+            (JSON.parse(notifications) as NotificationType[]).map((notification) => (
+              <div
+                key={notification._id}
+                className="bg-white rounded-lg p-4 shadow-md border border-gray-200 transition-all duration-200"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  {/* Content */}
+                  <div className="flex items-start gap-4 flex-1 min-w-0">
                     {/* Icon */}
-                    <div
-                      className={`w-10 h-10 rounded-full flex items-center justify-center ${isPositive ? "bg-green-500" : "bg-red-500"
-                        }`}
-                    >
-                      {isPositive ? (
-                        <TrendingUp className="text-white" size={20} />
-                      ) : (
-                        <TrendingUp className="text-white rotate-180" size={20} />
-                      )}
+                    <div className="shrink-0">
+                      <div className="w-10 h-10 flex items-center justify-center">
+                        {getIcon(notification.type)}
+                      </div>
                     </div>
 
-                    {/* Details */}
-                    <div>
-                      <h4 className="font-semibold">
-                        {isPositive ? `Swapped from ${tx.to}` : `Swapped to ${tx.from}`}
-                      </h4>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {formatDate(tx.createdAt)}
+                    {/* Text Content */}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-900 dark:text-white">
+                        {notification.title || (
+                          notification.type === "swap" ? "Crypto Swap" :
+                            notification.type === "deposit" ? "Deposit" :
+                              notification.type === "withdraw" ? "Withdrawal" :
+                                notification.type === "buy" ? "Buy Crypto" :
+                                  notification.type === "recieve" ? "Receive Balance" :
+                                    notification.type === "kyc_update" ? "KYC Update" :
+                                      notification.type === "wallet_connect" ? "Wallet Connected" : "Notification"
+                        )}
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 wrap-break-word">
+                        {notification.description || (
+                          notification.type === "swap"
+                            ? `Swapped ${notification.fromAmount} ${notification.from} to ${notification.toAmount} ${notification.to}`
+                            : notification.type === "withdraw"
+                              ? `Withdraw Failed ${notification.fromAmount} ${notification.from}`
+                              : notification.type === "deposit"
+                                ? `Deposited ${notification.toAmount} ${notification.to}`
+                                : notification.type === "buy"
+                                  ? `Bought ${notification.toAmount} ${notification.to}`
+                                  : notification.type === "wallet_connect"
+                                    ? "Your wallet has been successfully connected."
+                                    : ""
+                        )}
                       </p>
+                      <span className="text-xs text-gray-500 dark:text-gray-500 mt-2 inline-block">
+                        {formatDate(notification.createdAt)}
+                      </span>
                     </div>
-                  </div>
-
-                  {/* Amount */}
-                  <div className="text-right">
-                    <p className={`font-semibold ${isPositive ? "text-green-500" : "text-red-500"}`}>
-                      {isPositive ? `+${tx.fromAmount}` : `-${tx.toAmount}`} {isPositive ? tx.to : tx.from}
-                    </p>
                   </div>
                 </div>
-              )
-            }) : (
-              <div className="flex flex-col items-center justify-center gap-4">
-                <ArrowLeftRight />
-                <p>No transactions yet</p>
-                <Link
-                  href={`/`}
-                  className="flex items-center gap-2 bg-blue-700 px-4 py-2 rounded-lg text-white"
-                >
-                  <CreditCard />
-                  Buy {coinSymbol}
-                </Link>
               </div>
-            )
+            ))) : (
+            <div className="flex flex-col items-center justify-center gap-4">
+              <ArrowLeftRight />
+              <p>No transactions yet</p>
+              <Link
+                href={`/`}
+                className="flex items-center gap-2 bg-blue-700 px-4 py-2 rounded-lg text-white"
+              >
+                <CreditCard />
+                Buy {coinSymbol}
+              </Link>
+            </div>
+          )
           }
         </div>
       </div>

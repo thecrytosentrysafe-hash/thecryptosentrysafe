@@ -8,6 +8,7 @@ import {
   markAllNotificationsAsRead,
 } from "@/actions/notification.action";
 import { User } from "@/lib/auth";
+import { formatDate } from "@/lib/utils";
 
 const getIcon = (type: string) => {
   switch (type) {
@@ -23,8 +24,6 @@ const getIcon = (type: string) => {
       return <ArrowDownLeft className="w-5 h-5 text-green-500" />
     case "kyc_update":
       return <ClipboardCheck className="w-5 h-5 text-orange-500" />
-    case "metal_buy":
-      return <ShoppingBag className="w-5 h-5 text-amber-600" />
     case "wallet_connect":
       return <Bell className="w-5 h-5 text-indigo-500" />
     default:
@@ -116,7 +115,7 @@ function NotificationsClient({ notifications, user }: { notifications: string, u
                       )}
                     </p>
                     <span className="text-xs text-gray-500 dark:text-gray-500 mt-2 inline-block">
-                      {new Date(notification.createdAt).toLocaleString()}
+                      {formatDate(notification.createdAt)}
                     </span>
                   </div>
                 </div>
