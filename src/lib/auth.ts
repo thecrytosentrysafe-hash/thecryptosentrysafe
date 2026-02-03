@@ -147,7 +147,7 @@ export const auth = betterAuth({
   },
   emailVerification: {
     sendVerificationEmail: async ({ user, url }) => {
-      sendEmail({
+      await sendEmail({
         to: user.email,
         subject: "Verify Your Email - The Cryptosentry Safe",
         html: getEmailVerificationTemplate(user.name, url)
