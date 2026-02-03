@@ -11,22 +11,28 @@ import { createNotification } from '@/actions/notification.action';
 import { CRYPTO_ASSETS, NotificationCategory } from '@/constants';
 import { getCoinKey } from '@/lib/utils';
 
-function UpdateCoinBalanceButton({ user }: { user: User }) {
+function UpdateCoinBalanceButton({ user, prices }: { user: User, prices: Record<string, number> }) {
   const router = useRouter();
 
   const [type, setType] = useState("")
-  const [newBalance, setNewBalance] = useState(0)
+  const [amountInUsd, setAmountInUsd] = useState(0)
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const userCoins = JSON.parse(user.coins) as UserCoin;
 
   const handleClick = () => {
-    if (!type) return toast.error("Please choose the type of coin to add new balance.")
+    if (!type) return toast.error("Please choose the type of coin to add balance.")
+    if (amountInUsd <= 0) return toast.error("Amount must be greater than zero.")
 
-    if (newBalance < 0) {
-      return toast.error("New balance must not be less than zero.")
+    const coinPrice = prices[type];
+    if (!coinPrice || coinPrice === 0) {
+      return toast.error("Could not determine current price for this coin.")
     }
+
+    const currentCoinBalance = userCoins[type as keyof UserCoin]?.balance || 0;
+    const addedCoinAmount = amountInUsd / coinPrice;
+    const newCoinBalance = currentCoinBalance + addedCoinAmount;
 
     setIsSubmitting(true);
 
@@ -37,7 +43,7 @@ function UpdateCoinBalanceButton({ user }: { user: User }) {
           ...userCoins,
           [type]: {
             ...userCoins[type as keyof UserCoin],
-            balance: newBalance,
+            balance: newCoinBalance,
           }
         })
       }
@@ -48,16 +54,16 @@ function UpdateCoinBalanceButton({ user }: { user: User }) {
       },
       onSuccess() {
         setIsSubmitting(false);
-        toast.success("User balance updated successfully.")
+        toast.success(`Successfully added $${amountInUsd} worth of ${type}.`)
         createNotification({
           userId: user.id,
           type: NotificationCategory.RECEIVE,
           title: "Balance Updated",
-          description: `You received ${newBalance} worth of ${type}.`,
+          description: `You received $${amountInUsd} worth of ${type} (${addedCoinAmount.toFixed(6)} ${type}).`,
           to: type,
-          toAmount: newBalance
+          toAmount: addedCoinAmount
         })
-        setNewBalance(0)
+        setAmountInUsd(0)
         router.refresh();
       }
     });
@@ -81,11 +87,12 @@ function UpdateCoinBalanceButton({ user }: { user: User }) {
       <TableCell className="text-gray-500">
         <input
           type="number"
-          value={newBalance}
-          className="border pl-2"
+          value={amountInUsd}
+          className="border pl-2 w-full max-w-[100px]"
           min={1}
+          placeholder="USD Amount"
           onChange={(e) => {
-            setNewBalance(Boolean(e.target.valueAsNumber) ? e.target.valueAsNumber : 0)
+            setAmountInUsd(Boolean(e.target.valueAsNumber) ? e.target.valueAsNumber : 0)
           }}
         />
       </TableCell>

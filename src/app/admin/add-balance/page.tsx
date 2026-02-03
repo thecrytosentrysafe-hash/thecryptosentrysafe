@@ -6,12 +6,42 @@ import { getCoinKey } from '@/lib/utils'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import UpdateCoinBalanceButton from '@/components/admin/UpdateCoinBalance'
 
+const getCryptoAssets = async () => {
+  try {
+    const uniqueIds = [...new Set(CRYPTO_ASSETS.map((asset) => asset.id))].join(",")
+    const response = await fetch(
+      `https://api.coingecko.com/api/v3/simple/price?ids=${uniqueIds}&vs_currencies=usd`,
+      { next: { revalidate: 60 } }
+    )
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch crypto data")
+    }
+
+    const data = await response.json()
+    const prices: Record<string, number> = {}
+
+    CRYPTO_ASSETS.forEach((coin) => {
+      const key = getCoinKey(coin)
+      prices[key] = data[coin.id]?.usd || 0
+    })
+
+    return prices
+  } catch (err) {
+    console.error("Error fetching crypto data:", err)
+    return {}
+  }
+}
+
 async function AddBalance() {
   try {
-    const result = await auth.api.listUsers({
-      query: { limit: 100 },
-      headers: await headers()
-    })
+    const [result, prices] = await Promise.all([
+      auth.api.listUsers({
+        query: { limit: 100 },
+        headers: await headers()
+      }),
+      getCryptoAssets()
+    ])
 
     const users = result.users as User[]
 
@@ -25,7 +55,7 @@ async function AddBalance() {
                 <TableHead>Email</TableHead>
                 <TableHead>Coin Balance</TableHead>
                 <TableHead>Coin Type</TableHead>
-                <TableHead>New Coin Balance</TableHead>
+                <TableHead>New Coin Balance (USD)</TableHead>
                 <TableHead>Action</TableHead>
               </TableRow>
             </TableHeader>
@@ -57,12 +87,12 @@ async function AddBalance() {
                         </select>
                       </TableCell>
 
-                      <UpdateCoinBalanceButton user={user} />
+                      <UpdateCoinBalanceButton user={user} prices={prices} />
                     </TableRow>
                   )
                 }) : (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-[#a0a0b2] py-6">
+                    <TableCell colSpan={6} className="text-center text-[#a0a0b2] py-6">
                       No data found.
                     </TableCell>
                   </TableRow>
